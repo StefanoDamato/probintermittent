@@ -64,7 +64,7 @@ example_model = function(data, h=10, levels=0.9, holdout=FALSE,
     list2env(data_list, parent.frame());
 
     # Compute Croston's decomposition
-    decomp <- crostonsdecomp(y);
+    decomp <- crostonsdecomp(y_insample);
     occurrence <- decomp$occurrence;
     demand <- decomp$demand;
 

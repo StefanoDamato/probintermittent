@@ -15,11 +15,11 @@ crostonsdecomp <- function(y){
   if (all(y>0)) stop("The time series is smooth.");
   if (all(y==0)) stop("The time series is all zero.");
 
-  occurence <- ifelse(y>0, 1, 0);
+  occurrence <- ifelse(y>0, 1, 0);
   d_times <- which(y > 0);
   demand <- y[d_times];
   intervals <- diff(c(0,d_times));
 
-  return(list("occurence" = occurrence, "demand" = demand,
+  return(list("occurrence" = occurrence, "demand" = demand,
               "intervals" = intervals));
 }
