@@ -30,5 +30,5 @@ quantile_loss_scaled <- function(actuals, qforecast, level, y_insample){
   scale = c((y_insample[K+1]-y_insample[1:K])*level,
             (y_insample[(K+1):length(y_insample)]-y[K])*(1-level));
 
-  return(quantile_loss(actuals, qforecast, level)/mean(scale));
+  return(quantile_loss(actuals, qforecast, level)/(2*mean(scale)));
 }
