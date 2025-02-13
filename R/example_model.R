@@ -70,14 +70,14 @@ example_model = function(data, h=10, levels=0.9, holdout=FALSE,
     list2env(forecast_list, parent.frame());
 
     # Save the results as time series
-    forecast <- ts(y_forecast, start=pred_start ,frequency=freq);
+    meanforecast <- ts(mean_forecast, start=pred_start ,frequency=freq);
     probzero <- ts(prob_zero, start=pred_start, frequency=freq);
     upperCI <- ts(CI_upper, start=pred_start, frequency=freq, names=levels_upper);
     lowerCI <- ts(CI_lower, start=pred_start, frequency=freq, names=levels_lower);
 
     # Instantiate the predictions in a class
     model <- list("model" = "#TODO", "call" = call, "params" = params,
-                  "forecast" = forecast, "probzero" = probzero,
+                  "meanforecast" = meanforecast, "probzero" = probzero,
                   "levels_upper" = levels_upper, levels_lower = "levels_lower",
                   "upperCI" = upperCI, "lowerCI" = lowerCI);
     return(structure(model, class="#TODO"))

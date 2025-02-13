@@ -75,17 +75,17 @@ get_forecast = function(forecast_samples, levels, cumulative, side, h){
     }
 
     CI_upper <- CI_lower <- matrix(NA, h_steps, length(levels));
-    y_forecast <- prob_zero <- rep(NA, h_steps);
+    mean_forecast <- prob_zero <- rep(NA, h_steps);
 
     if (cumulative){
         forecast_samples[] <- rowSums(forecast_samples);
-        y_forecast[] <- mean(forecast_samples);
+        mean_forecast[] <- mean(forecast_samples);
         prob_zero[] <- mean(1*(forecast_samples == 0));
         CI_upper[] <- quantile(forecast_samples, levels_upper);
         CI_lower[] <- quantile(forecast_samples, levels_lower);
     }
     else{
-        y_forecast[] <- colMeans(forecast_samples);
+        mean_forecast[] <- colMeans(forecast_samples);
         prob_zero[] <- colMeans(1*(forecast_samples == 0));
         CI_upper[] <- t(apply(forecast_samples, 2, quantile, levels_upper));
         CI_lower[] <- t(apply(forecast_samples, 2, quantile, levels_lower));
@@ -94,7 +94,7 @@ get_forecast = function(forecast_samples, levels, cumulative, side, h){
     CI_upper[,levels_upper>=1] <- Inf;
     CI_lower[,levels_lower<=0] <- 0;
 
-    return(list("y_forecast" = y_forecast, "prob_zero" = prob_zero,
+    return(list("mean_forecast" = mean_forecast, "prob_zero" = prob_zero,
                 "levels_upper" = levels_upper, "levels_lower" = levels_lower,
                 "CI_upper" = CI_upper, "CI_lower" = CI_lower));
 
