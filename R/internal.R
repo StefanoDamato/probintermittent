@@ -55,6 +55,8 @@ init_data <- function(data, holdout, h){
 #' @details This function is used within other package functions.
 #'
 #' @keywords internal
+#'
+#' @importFrom stats quantile
 get_forecast = function(forecast_samples, levels, cumulative, side, h){
 
     levels_upper <- levels_lower <- rep(NA, length(levels));

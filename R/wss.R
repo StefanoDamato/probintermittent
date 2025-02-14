@@ -42,7 +42,9 @@
 #' y <- c(rpois(50,0.3),rpois(50,0.8))
 #' test <- wss(y)
 #'
-#' @importFrom package function
+#' @importFrom stats rnorm
+#'
+#' @export
 example_model = function(data, h=10, levels=0.9, holdout=FALSE,
                          cumulative=FALSE, side=c("upper", "both", "lower"),
                          nsim=10000){
