@@ -17,6 +17,8 @@
 #' @details This function is used within other package functions.
 #'
 #' @keywords internal
+#'
+#' @importFrom stats deltat frequency time
 init_data <- function(data, holdout, h){
 
     y <- as.vector(data);
@@ -45,7 +47,7 @@ init_data <- function(data, holdout, h){
 #' @param h The number of steps ahead used as forecasting horizon.
 #' @return A list with the following components:
 #' \describe{
-#'   \item{y_forecast}{The predicted mean.}
+#'   \item{mean_forecast}{The predicted mean.}
 #'   \item{prob_zero}{The predicted probability of observing zero.}
 #'   \item{levels_upper}{The upper confidence levels of the interval.}
 #'   \item{levels_lower}{The lower confidence levels of the interval.}

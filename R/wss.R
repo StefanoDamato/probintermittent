@@ -42,12 +42,12 @@
 #' y <- c(rpois(50,0.3),rpois(50,0.8))
 #' test <- wss(y)
 #'
-#' @importFrom stats rnorm
+#' @importFrom stats rnorm ts
 #'
+#' @family models
 #' @export
-example_model = function(data, h=10, levels=0.9, holdout=FALSE,
-                         cumulative=FALSE, side=c("upper", "both", "lower"),
-                         nsim=10000){
+wss = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
+               side=c("upper", "both", "lower"), nsim=10000){
 
     # Check the arguments
     if (h <= 0 | (h!=as.integer(h))) stop("h should be a positive integer");
@@ -63,7 +63,10 @@ example_model = function(data, h=10, levels=0.9, holdout=FALSE,
 
     # Pre-process the data to get in-sample, holdout and infos
     data_list <- init_data(data, holdout, h);
-    list2env(data_list, parent.frame());
+    y_insample <- data_list$y_insample;
+    y_holdout <- data_list$y_houldout;
+    freq <- data_list$freq;
+    pred_start <- data_list$pred_start;
 
     # Compute Croston's decomposition
     decomp <- crostonsdecomp(y_insample);
@@ -95,11 +98,16 @@ example_model = function(data, h=10, levels=0.9, holdout=FALSE,
     forecast_samples[to_sample] <- jittered;
 
     # Save relevant parameters
-    params <- list("P" = p);
+    params <- list("P" = P);
 
     # Store the results in some arrays
     forecast_list <- get_forecast(forecast_samples, levels, cumulative, side, h);
-    list2env(forecast_list, parent.frame());
+    mean_forecast <- forecast_list$mean_forecast;
+    prob_zero <- forecast_list$prob_zero;
+    levels_upper <- forecast_list$levels_upper;
+    levels_lower <- forecast_list$levels_lower;
+    CI_upper <- forecast_list$CI_upper;
+    CI_lower <- forecast_list$CI_lower;
 
     # Save the results as time series
     meanforecast <- ts(mean_forecast, start=pred_start ,frequency=freq);

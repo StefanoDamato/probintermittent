@@ -9,6 +9,7 @@
 #'   \item{demand}{The subseries of positive values.}
 #'   \item{intervals}{A sequence of time intervals between positive observations.}
 #' }
+#'
 #' @export
 crostonsdecomp <- function(y){
 
