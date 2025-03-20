@@ -12,6 +12,8 @@
 #' @param cumulative Whether to just return the sum over the forecast horizon.
 #' @param side The side of the confidence intervals.
 #' @param nsim The amount of predictive sample paths.
+#' @param paths Whether to return sample trajectories.
+#' @param rmzeros Whether to remove the initial zeros from the series.
 #' @param distr The distribution choice to be fit.
 #'
 #' @return The function returns a model of a class "#TODO", which contains:
@@ -25,6 +27,7 @@
 #'   \item{levels_lower}{The lower confidence levels of the interval.}
 #'   \item{upperCI}{The upper bounds of the confidence region.}
 #'   \item{lowerCI}{The lower bounds of the confidence region.}
+#'   \item{samples}{The predictive sample paths.}
 #' }
 #'
 #' @references
@@ -47,8 +50,9 @@
 #' @family models
 #' @export
 staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
-                       side=c("upper", "both", "lower"), nsim=10000,
-                       distr=c("auto", "pois", "zip", "nbinom", "zinb", "mixture")){
+                   side=c("upper", "both", "lower"), nsim=10000, paths=FALSE,
+                   rmzeros=FALSE, distr=c("auto", "pois", "zip",
+                                          "nbinom", "zinb", "mixture")){
 
   # Check the arguments
   if (h <= 0 | (h!=as.integer(h))) stop("h should be a positive integer");
@@ -57,12 +61,14 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
   if (!is.logical(cumulative)) stop("cumulative should be a boolean");
   side <- match.arg(side);
   if (nsim <= 0) stop("nsim should be a positive integer");
+  if (!is.logical(rmzeros)) stop("rmzeros should be a boolean");
+  if (!is.logical(rmzeros)) stop("rmzeros should be a boolean");
   distr <- match.arg(distr);
 
   # Save the arguments of the function in a list
   call <- list("data" = data, "h" = h, "levels" = levels, "holdout" = holdout,
                "cumulative" = cumulative, "side" = side, "nsim" = nsim,
-               "distr" = distr);
+               "paths" = paths, "rmzeros" = rmzeros, "distr" = distr);
 
   # Pre-process the data to get in-sample, holdout and infos
   data_list <- init_data(data, holdout, h);
@@ -77,6 +83,13 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
   occurrence <- decomp$occurrence;
   demand <- decomp$demand;
   shifted_demand <- demand-1;
+
+  # Remove initial zeros
+  if (rmzeros == TRUE){
+    new_start <- which(y_insample > 0)[1]
+    y_insample <- y_insample[new_start:L];
+    occurrence <- occurrence[new_start:L];
+  }
 
   #Select the distributions to be evaluated
   if (distr == "auto" || distr == "mixture"){
@@ -105,16 +118,9 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
 
   # Fit distributions with no closed form expression for ML estimators
   if ("nbinom" %in% to_eval){
-    opt <- nloptr(
-      x0 = c(mean(y_insample), 0.5),
-      eval_f = function(x) -mean(dnbinom(y_insample, x[1], x[2], log=TRUE)),
-      lb = rep(0, 2) + epsilon,
-      ub = c(Inf, 1) - epsilon,
-      opts = list(algorithm = "NLOPT_LN_BOBYQA", maxeval = 100)
-    );
-    x <- opt$solution;
-    size <- x[1];
-    prob <- x[2];
+    mmes <- nbinom_moment_mathcing(y_insample);
+    size <- mmes['size'];
+    prob <- mmes['prob'];
     loglik <- sum(dnbinom(y_insample, size, prob, log=TRUE));
     npar <- 2;
     aic["nbinom"] <- -2*loglik + 2*npar;
@@ -122,16 +128,9 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
   }
   if ("zinb" %in% to_eval){
     pzero <- mean(1-occurrence);
-    opt <- nloptr(
-      x0 = c(mean(y_insample), 0.5),
-      eval_f = function(x) -mean(dnbinom(shifted_demand, x[1], x[2], log=TRUE)),
-      lb = rep(0, 2) + epsilon,
-      ub = c(Inf, 1) - epsilon,
-      opts = list(algorithm = "NLOPT_LN_BOBYQA", maxeval = 100)
-    );
-    x <- opt$solution;
-    size <- x[1];
-    prob <- x[2];
+    mmes <- nbinom_moment_mathcing(shifted_demand);
+    size <- mmes['size'];
+    prob <- mmes['prob'];
     loglik <- sum(dzinb(y_insample, pzero, size, prob, log=TRUE));
     npar <- 3;
     aic["zinb"] <- -2*loglik + 2*npar;
@@ -162,8 +161,11 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
     samples <- c(samples, rzinb(iid_sim, mles["zinb_pzero"], mles["zinb_size"],
                                    mles["zinb_prob"]));
   }
+  if (distr == "mixture"){
+    samples <- samples[sample.int(length(samples))];
+  }
 
-  forecast_samples <- matrix(samples[sample.int(length(samples))], ncol=h);
+  forecast_samples <- matrix(samples, ncol=h);
 
 
   # Save relevant parameters
@@ -183,11 +185,17 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
   probzero <- ts(prob_zero, start=pred_start, frequency=freq);
   upperCI <- ts(CI_upper, start=pred_start, frequency=freq, names=levels_upper);
   lowerCI <- ts(CI_lower, start=pred_start, frequency=freq, names=levels_lower);
+  if (paths==TRUE){
+    samples <- ts(t(forecast_samples), start=pred_start, frequency=freq);
+  } else{
+    samples <- NULL;
+  }
+
 
   # Instantiate the predictions in a class
   model <- list("model" = "StaticD", "call" = call, "params" = params,
                 "meanforecast" = meanforecast, "probzero" = probzero,
                 "levels_upper" = levels_upper, levels_lower = "levels_lower",
-                "upperCI" = upperCI, "lowerCI" = lowerCI);
+                "upperCI" = upperCI, "lowerCI" = lowerCI, "samples" = samples);
   return(structure(model, class="#TODO"))
 }
