@@ -1,6 +1,6 @@
-#' WSS
+#' WSS bootstrapping method
 #'
-#' Markov-Chain-based bootstrapping model
+#' Markov-Chain-based bootstrapping model.
 #'
 #' The model separates occurrence and the demand. The occurrence is estimated
 #' assuming a Markov Chain whose transition matrix is estimated from past data.
@@ -67,6 +67,7 @@ wss = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
     y_holdout <- data_list$y_houldout;
     freq <- data_list$freq;
     pred_start <- data_list$pred_start;
+    L <- data_list$L;
 
     # Compute Croston's decomposition
     decomp <- crostonsdecomp(y_insample);
@@ -77,11 +78,18 @@ wss = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
     occ_diff <- 2*occurrence[2:L] - occurrence[1:(L-1)]
     P <- matrix(c(sum(occ_diff == 0), sum(occ_diff == -1),
                   sum(occ_diff == 2), sum(occ_diff == 1)), 2, 2);
+    for (i in 1:2){
+      if (sum(P[i,])==0){
+        P[i,] <- c(length(occurrence)-sum(occurrence), sum(occurrence));
+      }
+    }
     P <- P/rowSums(P);
+
+
 
     # Set the chain in the last observed state
     forecast_samples <- matrix(NA, nsim, h);
-    occ_state <- rep(occ_state[L], nsim);
+    occ_state <- rep(occurrence[L], nsim);
 
     # Sample sequentially the next h occurrences
     for(i in 1:h){
