@@ -63,19 +63,32 @@ log_loss <- function(actuals, prob_zero){
   return(log(ifelse(as.integer(actuals==0), prob_zero, 1-prob_zero)));
 }
 
+#' Forecast coverage.
+#'
+#' The proportion of forecasts that are greater or equal than the true value.
+#'
+#' @param actuals The realisation of the data.
+#' @param qforecasts The predicted quantile.
+#' @return A vector containing the value of the loss.
+#'
+#' @family metrics
+#' @export
+coverage <- function(actuals, qforecast){
+  return(as.integer(qforecast >= actuals));
+}
 
 #' The log-score.
 #'
 #' The log-likelihood of the forecast, evaluated on the data.
 #'
 #' @param actuals The realisation of the data.
-#' @param samples The predicted probability of zero.
+#' @param samples The samples from the forecast distribution.
 #' @return A vector containing the value of the loss.
 #'
 #' @family metrics
 #' @export
 log_score <- function(actuals, samples){
-  likelihood <- rep(NA, lenght(actuals));
+  likelihood <- rep(NA, length(actuals));
   for (i in 1:h){
     likelihood[i] <-  mean(samples[i,] == actuals[i]);
   }

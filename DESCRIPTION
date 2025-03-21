@@ -1,6 +1,6 @@
 Package: probintermittent
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Probabilistic models for intermittent time series
+Version: 0.2.1
 Authors@R: 
     person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
@@ -12,3 +12,11 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 URL: https://github.com/StefanoDamato/probintermittent
 BugReports: https://github.com/StefanoDamato/probintermittent/issues
+Imports:
+    Rcpp,
+    RcppArmadillo,
+    nloptr
+LinkingTo:
+    Rcpp,
+    RcppArmadillo
+
