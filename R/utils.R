@@ -1,6 +1,6 @@
 #' Internal epsilon value for nloptr constraints
 #' @keywords internal
-epsilon <- 1e-6
+epsilon <- 1e-4
 
 #' Croston's decomposition
 #'
