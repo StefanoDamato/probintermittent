@@ -13,6 +13,7 @@
 #' @param cumulative Whether to just return the sum over the forecast horizon.
 #' @param side The side of the confidence intervals.
 #' @param nsim The amount of predictive sample paths.
+#' @param paths Whether to return sample trajectories.
 #'
 #' @return Function returns a model of a class "#TODO", which contains:
 #' \describe{
@@ -25,6 +26,7 @@
 #'   \item{levels_lower}{The lower confidence levels of the interval.}
 #'   \item{upperCI}{The upper bounds of the confidence region.}
 #'   \item{lowerCI}{The lower bounds of the confidence region.}
+#'   \item{samples}{The predictive sample paths.}
 #' }
 #'
 #' @references
@@ -47,7 +49,7 @@
 #' @family models
 #' @export
 wss = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
-               side=c("upper", "both", "lower"), nsim=10000){
+               side=c("upper", "both", "lower"), nsim=10000, paths=FALSE){
 
     # Check the arguments
     if (h <= 0 | (h!=as.integer(h))) stop("h should be a positive integer");
@@ -56,10 +58,12 @@ wss = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
     if (!is.logical(cumulative)) stop("cumulative should be a boolean");
     side <- match.arg(side);
     if (nsim <= 0) stop("nsim should be a positive integer");
+    if (!is.logical(paths)) stop("paths should be a boolean");
 
     # Save the arguments of the function in a list
     call <- list("data" = data, "h" = h, "levels" = levels, "holdout" = holdout,
-                 "cumulative" = cumulative, "side" = side, "nsim" = nsim);
+                 "cumulative" = cumulative, "side" = side, "nsim" = nsim,
+                 "paths" = paths);
 
     # Pre-process the data to get in-sample, holdout and infos
     data_list <- init_data(data, holdout, h);
@@ -122,12 +126,18 @@ wss = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
     probzero <- ts(prob_zero, start=pred_start, frequency=freq);
     upperCI <- ts(CI_upper, start=pred_start, frequency=freq, names=levels_upper);
     lowerCI <- ts(CI_lower, start=pred_start, frequency=freq, names=levels_lower);
+    if (paths==TRUE){
+      samples <- ts(t(forecast_samples), start=pred_start, frequency=freq,
+                    names=paste0('Path ', 1:nsim));
+    } else{
+      samples <- NULL;
+    }
 
     # Instantiate the predictions in a class
     model <- list("model" = "WSS", "call" = call, "params" = params,
                   "meanforecast" = meanforecast, "probzero" = probzero,
                   "levels_upper" = levels_upper, levels_lower = "levels_lower",
-                  "upperCI" = upperCI, "lowerCI" = lowerCI);
+                  "upperCI" = upperCI, "lowerCI" = lowerCI, "samples" = samples);
     return(structure(model, class="#TODO"))
 }
 
