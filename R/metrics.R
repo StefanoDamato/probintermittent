@@ -13,6 +13,21 @@ quantile_loss <- function(actuals, qforecast, level){
   return(2*abs(actuals-qforecast)*ifelse(actuals>qforecast, level, 1-level));
 }
 
+#' Interval score
+#'
+#' A proper scoring rule for probabilistic forecasts.
+#'
+#' @param actuals The realisation of the data.
+#' @param qforecast The predicted quantile.
+#' @param level The quantile level of the quantile.
+#' @return A vector containing the value of the loss.
+#'
+#' @family metrics
+#' @export
+interval_score <- function(actuals, qforecast, level){
+  return(qforecast + (1/1-levels)*ifelse(actuals>qforecast, actuals-qforecast, 0));
+}
+
 #' Quantile loss scaled by its in-sample LOO value.
 #'
 #' A proper and scale-independent scoring rule for probabilistic forecasts.
@@ -31,6 +46,28 @@ scaled_quantile_loss <- function(actuals, qforecast, level, y_insample){
   K <- ceiling((length(y_insample)-1)*level);
   scale = c((y_insample[K+1]-y_insample[1:K])*(1-level),
             (y_insample[(K+1):length(y_insample)]-y_insample[K])*level);
+
+  return(quantile_loss(actuals, qforecast, level)/(2*mean(scale)));
+}
+
+#' Interval score scaled by its in-sample LOO value.
+#'
+#' A proper and scale-independent scoring rule for probabilistic forecasts.
+#'
+#' @param actuals The realisation of the data.
+#' @param qforecast The predicted quantile.
+#' @param level The quantile level of the quantile.
+#' @param y_insample In-sample values of the time series.
+#' @return A vector containing the value of the loss.
+#'
+#' @family metrics
+#' @export
+scaled_interval_score <- function(actuals, qforecast, level, y_insample){
+
+  y_insample <- sort(y_insample);
+  K <- ceiling((length(y_insample)-1)*level);
+  scale = c(rep(y_insample[K+1], K), rep(y_insample[K], length(y_insample)-K) +
+              (y_insample[(K+1):length(y_insample)]-y_insample[K])*(1/1-level));
 
   return(quantile_loss(actuals, qforecast, level)/(2*mean(scale)));
 }
