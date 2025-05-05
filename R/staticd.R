@@ -1,6 +1,6 @@
 #' Static parametric distribution.
 #'
-#' Maximise the marginal likelihood of the time series using Poisson,
+#' Maximise the marginal likelihood of the time series using distributions as Poisson,
 #' negative binomial or their zero-inflated versions.
 #'
 #' Short description #TODO.
@@ -35,7 +35,7 @@
 #' \item paper to cite # TODO
 #' }
 #'
-#' @author Name Surname, \email{name@domain.#TODO}
+#' @author Stefano Damato, \email{stefano.damato@idsia.ch}
 #'
 #' @keywords some words #TODO
 #'
@@ -61,7 +61,7 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
   if (!is.logical(cumulative)) stop("cumulative should be a boolean");
   side <- match.arg(side);
   if (nsim <= 0) stop("nsim should be a positive integer");
-  if (!is.logical(rmzeros)) stop("rmzeros should be a boolean");
+  if (!is.logical(paths)) stop("paths should be a boolean");
   if (!is.logical(rmzeros)) stop("rmzeros should be a boolean");
   distr <- match.arg(distr);
 
@@ -118,9 +118,9 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
 
   # Fit distributions with no closed form expression for ML estimators
   if ("nbinom" %in% to_eval){
-    mmes <- nbinom_moment_mathcing(y_insample);
-    size <- mmes['size'];
-    prob <- mmes['prob'];
+    nbinom_fitted <- fit_nbinom(y_insample);
+    size <- nbinom_fitted['size'];
+    prob <- nbinom_fitted['prob'];
     loglik <- sum(dnbinom(y_insample, size, prob, log=TRUE));
     npar <- 2;
     aic["nbinom"] <- -2*loglik + 2*npar;
@@ -128,9 +128,9 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
   }
   if ("zinb" %in% to_eval){
     pzero <- mean(1-occurrence);
-    mmes <- nbinom_moment_mathcing(shifted_demand);
-    size <- mmes['size'];
-    prob <- mmes['prob'];
+    nbinom_fitted <- fit_nbinom(shifted_demand);
+    size <- nbinom_fitted['size'];
+    prob <- nbinom_fitted['prob'];
     loglik <- sum(dzinb(y_insample, pzero, size, prob, log=TRUE));
     npar <- 3;
     aic["zinb"] <- -2*loglik + 2*npar;
@@ -186,11 +186,11 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
   upperCI <- ts(CI_upper, start=pred_start, frequency=freq, names=levels_upper);
   lowerCI <- ts(CI_lower, start=pred_start, frequency=freq, names=levels_lower);
   if (paths==TRUE){
-    samples <- ts(t(forecast_samples), start=pred_start, frequency=freq);
+    samples <- ts(t(forecast_samples), start=pred_start, frequency=freq,
+                  names=paste0('Path ', 1:nsim));
   } else{
     samples <- NULL;
   }
-
 
   # Instantiate the predictions in a class
   model <- list("model" = "StaticD", "call" = call, "params" = params,
