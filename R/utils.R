@@ -131,5 +131,24 @@ get_forecast = function(forecast_samples, levels, cumulative, side, h){
   return(list("mean_forecast" = mean_forecast, "prob_zero" = prob_zero,
               "levels_upper" = levels_upper, "levels_lower" = levels_lower,
               "CI_upper" = CI_upper, "CI_lower" = CI_lower));
+}
 
+#' Negative binomial MLEs
+#'
+#' Fit the distribution using an optimiser.
+#'
+#' @param y A vector of data.
+#' @return A vector containing `size` and `prob` parameters
+fit_nbinom = function(y){
+  opt <- nloptr(
+    x0 = c(max(mean(y), epsilon), 0.5),
+    eval_f = function(x) -mean(dnbinom(y, x[1], x[2], log=TRUE)),
+    lb = rep(0, 2) + epsilon,
+    ub = c(Inf, 1) - epsilon,
+    opts = list(algorithm = "NLOPT_LN_BOBYQA", maxeval = 100)
+  );
+  x <- opt$solution;
+  size <- x[1];
+  prob <- x[2];
+  return(c('size' = size, 'prob'=prob))
 }
