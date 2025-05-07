@@ -69,7 +69,7 @@ scaled_interval_score <- function(actuals, qforecast, level, y_insample){
   scale = c(rep(y_insample[K+1], K), rep(y_insample[K], length(y_insample)-K) +
               (y_insample[(K+1):length(y_insample)]-y_insample[K])*(1/1-level));
 
-  return(quantile_loss(actuals, qforecast, level)/(2*mean(scale)));
+  return(interval_score(actuals, qforecast, level)/(mean(scale)));
 }
 
 #' The Brier score.
@@ -131,3 +131,72 @@ log_score <- function(actuals, samples){
   }
   return(log(likelihood));
 }
+
+
+#' The binary log-loss.
+#'
+#' The negative log-likelihood of a Bernoulli random variable.
+#'
+#' @param actuals The realisation of the data.
+#' @param prob_zero The predicted probability of zero.
+#' @return A vector containing the value of the loss.
+#'
+#' @family metrics
+#' @export
+log_loss <- function(actuals, prob_zero){
+  return(log(ifelse(as.integer(actuals==0), prob_zero, 1-prob_zero)));
+}
+
+#' Forecast coverage.
+#'
+#' The proportion of forecasts that are greater or equal than the true value.
+#'
+#' @param actuals The realisation of the data.
+#' @param qforecasts The predicted quantile.
+#' @return A vector containing the value of the loss.
+#'
+#' @family metrics
+#' @export
+coverage <- function(actuals, qforecast){
+  return(as.integer(qforecast >= actuals));
+}
+
+#' t-test with FDR correction on test.
+#'
+#' Selection of the best method based on the mean (paired t-test).
+#'
+#' @param scores A dataframe where scores are stored as columns.
+#' @param alpha The level of the test.
+#' @return A vector containing neames of methods equivalent to the best.
+#'
+#' @family metrics
+#' @export
+test_FDR <- function(scores, alpha) {
+
+  best_method <- names(which.min(colMeans(scores, na.rm = TRUE)));
+  methods <- setdiff(colnames(scores), best_method);
+
+  pvals <- sapply(methods,
+                  function(method) t.test(scores[[best_method]],
+                                          scores[[method]],
+                                          paired = TRUE)$p.value)
+
+  n <- length(pvals)
+  pvals <- sort(pvals)
+  thresholds <- ((1:n)/n)* alpha;
+  reject <- pvals <= thresholds;
+
+  if (any(reject)){
+    if (all(reject)){
+      equivalent_methods <- c()
+    } else{
+      equivalent_methods <-names(pvals[pvals > pvals[reject]]);
+    }
+  } else{
+  equivalent_methods <- names(pvals)
+  }
+
+  return(list('best_method' = best_method,
+              'equivalent_methods' = rev(equivalent_methods)))
+}
+
