@@ -1,7 +1,7 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
-
+// The dynamic estimation of the parameters of a Gamma distribution
 // [[Rcpp::export]]
 List gammaDynamic(NumericVector y, double a0, double b0, double w) {
 
@@ -24,7 +24,7 @@ List gammaDynamic(NumericVector y, double a0, double b0, double w) {
   );
 }
 
-
+// The dynamic estimation of the parameters of a Beta distribution
 // [[Rcpp::export]]
 List betaDynamic(NumericVector y, double v, double a0, double b0, double w) {
 
