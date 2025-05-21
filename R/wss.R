@@ -105,7 +105,7 @@ wss = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
     # Sample the demand from past data with jittering
     to_sample <- forecast_samples==1;
     new_demand <- sample(demand, sum(to_sample), replace=TRUE);
-    jittered <- 1 + round(new_demand + rnorm(sum(to_sample))*sqrt(new_demand));
+    jittered <- 1 + floor(new_demand + rnorm(sum(to_sample))*sqrt(new_demand));
     jittered[jittered<=0] <- new_demand[jittered<=0];
     forecast_samples[to_sample] <- jittered;
 
