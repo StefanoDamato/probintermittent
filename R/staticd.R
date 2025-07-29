@@ -1,7 +1,7 @@
 #' Static parametric distribution.
 #'
 #' Maximise the marginal likelihood of the time series using distributions as Poisson,
-#' negative binomial or their zero-inflated versions.
+#' negative binomial or their hurdle-shifted versions.
 #'
 #' Short description #TODO.
 #'
@@ -51,8 +51,8 @@
 #' @export
 staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
                    side=c("upper", "both", "lower"), nsim=10000, paths=FALSE,
-                   rmzeros=FALSE, distr=c("auto", "pois", "zip",
-                                          "nbinom", "zinb", "mixture")){
+                   rmzeros=FALSE, distr=c("auto", "pois", "hsp",
+                                          "nbinom", "hsnb", "mixture")){
 
   # Check the arguments
   if (h <= 0 | (h!=as.integer(h))) stop("h should be a positive integer");
@@ -93,7 +93,7 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
 
   #Select the distributions to be evaluated
   if (distr == "auto" || distr == "mixture"){
-    to_eval <- c("nbinom", "pois", "zinb", "zip");
+    to_eval <- c("nbinom", "pois", "hsnb", "hsp");
   } else{
     to_eval <- distr;
   }
@@ -107,10 +107,10 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
     aic["pois"] <- -2*loglik + 2*npar;
     mles["pois_lambda"] <- lambda;
   }
-  if ("zip" %in% to_eval){
+  if ("hsp" %in% to_eval){
     lambda <- mean(shifted_demand);
     pzero <- mean(1-occurrence);
-    loglik <- sum(dzip(y_insample, pzero, lambda, log=TRUE));
+    loglik <- sum(dhsp(y_insample, pzero, lambda, log=TRUE));
     npar <- 2;
     aic["zip"] <- -2*loglik + 2*npar;
     mles[c("zip_lambda", "zip_pzero")] <- c(lambda, pzero);
@@ -131,7 +131,7 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
     nbinom_fitted <- fit_nbinom(shifted_demand);
     size <- nbinom_fitted['size'];
     prob <- nbinom_fitted['prob'];
-    loglik <- sum(dzinb(y_insample, pzero, size, prob, log=TRUE));
+    loglik <- sum(dhsnb(y_insample, pzero, size, prob, log=TRUE));
     npar <- 3;
     aic["zinb"] <- -2*loglik + 2*npar;
     mles[c("zinb_pzero", "zinb_size", "zinb_prob")] <- c(pzero, size, prob);
@@ -151,14 +151,14 @@ staticd = function(data, h=10, levels=0.9, holdout=FALSE, cumulative=FALSE,
     samples <- c(samples, rpois(iid_sim, mles["pois_lambda"]));
   }
   if ("zip" %in% pred_distr){
-    samples <- c(samples, rzip(iid_sim, mles["zip_pzero"], mles["zip_lambda"]));
+    samples <- c(samples, rhsp(iid_sim, mles["zip_pzero"], mles["zip_lambda"]));
   }
   if ("nbinom" %in% pred_distr){
     samples <- c(samples, rnbinom(iid_sim, mles["nbinom_size"],
                                  mles["nbinom_prob"]));
   }
   if ("zinb" %in% pred_distr){
-    samples <- c(samples, rzinb(iid_sim, mles["zinb_pzero"], mles["zinb_size"],
+    samples <- c(samples, rhsnb(iid_sim, mles["zinb_pzero"], mles["zinb_size"],
                                    mles["zinb_prob"]));
   }
   if (distr == "mixture"){
